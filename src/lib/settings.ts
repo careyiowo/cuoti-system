@@ -20,9 +20,9 @@ export interface IAiSettings {
 export const DEFAULT_AI_SETTINGS: IAiSettings = {
   baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
   apiKey: '',
-  // 认题要原生视觉，账号免费额度里能看图的就是它
-  model: 'qwen3.7-plus',
-  // 四科共用一个解题模型，选额度里推理最强的旗舰；数学专精模型不覆盖英语/政治/408
+  // 认题用视觉理解专精模型：处理版式、公式、卷面涂改比通用模型的视觉分支更稳
+  model: 'qwen3-vl-plus',
+  // 四科共用一个解题模型，选额度里代际最新的旗舰；数学专精模型不覆盖英语/政治/408
   solverModel: 'qwen4-max',
 };
 

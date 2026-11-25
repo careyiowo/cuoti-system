@@ -101,7 +101,7 @@ export default function SettingsPage() {
             <Input
               value={settings.model}
               onChange={(e) => patch({ model: e.target.value })}
-              placeholder="qwen3.8-flash"
+              placeholder="qwen3.8-27b"
             />
           </div>
         </div>
@@ -126,13 +126,15 @@ export default function SettingsPage() {
         <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">怎么填</div>
         <ul className="mt-2 space-y-1.5 text-[13px] leading-6 text-foreground">
           <li>
-            默认接的是阿里云百炼的 OpenAI 兼容地址，模型 qwen3.8-flash。Key 在 bailian.console.aliyun.com
-            的「API-KEY 管理」里创建，新账号有免费额度。
+            默认模型 qwen3.8-27b：它是原生视觉语言模型，百炼免费额度里给了 100 万 tokens，够识别 150 道左右。
           </li>
           <li>
-            填好后点「测试连接」：返回成功说明地址、Key、模型名三样都通；报 404 多半是模型名写错，去百炼控制台核对当前可用的模型 ID。
+            免费额度用完后，把模型名换成 qwen3.8-flash：输入 0.8 元、输出 2.7 元每百万 tokens，每题约半分钱，响应也更快。
           </li>
-          <li>必须选「看图回答问题」的视觉模型，普通文本模型认不出题目。</li>
+          <li>
+            填好后点「测试连接」：返回成功说明地址、Key、模型名三样都通；报 404 多半是模型名写错，去百炼控制台核对可用的模型 ID。
+          </li>
+          <li>必须选能看图的模型。qwen-mt-lite（翻译）、gui-plus（界面操作）这类认不出题目，即使有免费额度也用不上。</li>
           <li>百炼和火山方舟允许浏览器直连；智谱的接口不放行跨域，直连会被拦，要用它得另配后端中转。</li>
           <li>Key 只写在当前浏览器的本地存储里，不会上传到任何地方，但不要在公用电脑上填。</li>
         </ul>

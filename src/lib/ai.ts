@@ -104,6 +104,9 @@ export async function recognizeQuestion(
     model: settings.model,
     temperature: 0.1,
     messages: [{ role: 'user', content }],
+    // Qwen 系列默认开启深度思考，输出预算会被思维链吃掉一大半。
+    // 题目识别是确定性的抽取任务，关掉思考更快也更省额度；不认这个字段的厂商会忽略它。
+    enable_thinking: false,
   };
 
   let response: Response;

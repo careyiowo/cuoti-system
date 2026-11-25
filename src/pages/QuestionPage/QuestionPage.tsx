@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, Check, Loader2, Pencil, Sparkles, Trash2, X } from 'lucide-react';
 import MasteryMark from '@/components/MasteryMark';
+import MathText from '@/components/MathText';
 import QuestionEditor from '@/components/QuestionEditor';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -178,16 +179,20 @@ export default function QuestionPage() {
       </div>
 
       <Card className="rounded-sm p-5">
-        <p className="whitespace-pre-wrap text-[14px] leading-7 text-foreground">
-          {question.stem || '（这道题只有图片，没有文字题干）'}
-        </p>
+        {question.stem ? (
+          <MathText text={question.stem} className="text-[14px] leading-8 text-foreground" />
+        ) : (
+          <p className="text-[14px] leading-7 text-muted-foreground">（这道题只有图片，没有文字题干）</p>
+        )}
 
         {question.options.length > 0 && (
-          <div className="mt-4 space-y-1.5">
+          <div className="mt-4 space-y-1">
             {question.options.map((option) => (
-              <div key={option.label} className="flex gap-2 text-[13px] leading-6">
-                <span className="w-5 shrink-0 font-medium text-muted-foreground">{option.label}</span>
-                <span className="text-foreground">{option.text}</span>
+              <div key={option.label} className="flex gap-2.5">
+                <span className="w-5 shrink-0 text-[13px] font-medium leading-7 text-muted-foreground">
+                  {option.label}
+                </span>
+                <MathText text={option.text} className="min-w-0 flex-1 text-[13px] leading-7 text-foreground" />
               </div>
             ))}
           </div>
@@ -212,9 +217,11 @@ export default function QuestionPage() {
               <span className="text-[11px] text-muted-foreground">AI 求解 · 未核对</span>
             )}
           </div>
-          <p className="mt-1.5 whitespace-pre-wrap text-[14px] text-foreground">
-            {question.answer || '未录入'}
-          </p>
+          {question.answer ? (
+            <MathText text={question.answer} className="mt-1.5 text-[14px] leading-8 text-foreground" />
+          ) : (
+            <p className="mt-1.5 text-[14px] text-muted-foreground">未录入</p>
+          )}
           {question.wrongAnswer && (
             <p className="mt-1 text-[12px] text-muted-foreground">
               上次错选 <span className="text-destructive">{question.wrongAnswer}</span>
@@ -232,9 +239,14 @@ export default function QuestionPage() {
 
       <Card className="rounded-sm p-4">
         <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">解析</div>
-        <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-7 text-foreground">
-          {question.solution || '未录入解析'}
-        </p>
+        {question.solution ? (
+          <MathText
+            text={question.solution}
+            className="mt-2 border-l-2 border-primary/25 pl-3 text-[13px] leading-8 text-foreground"
+          />
+        ) : (
+          <p className="mt-1.5 text-[13px] text-muted-foreground">未录入解析</p>
+        )}
       </Card>
 
       <div className="flex flex-wrap gap-2 border-t border-border pt-4">

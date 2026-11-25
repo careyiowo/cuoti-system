@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorFallback } from '@/components/ErrorFallback';
 import App from './app';
+import 'katex/dist/katex.min.css';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(

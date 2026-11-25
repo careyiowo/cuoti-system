@@ -105,9 +105,12 @@ export default function QuestionEditor({ draft, onChange }: QuestionEditorProps)
         <Textarea
           value={draft.stem}
           onChange={(e) => patch({ stem: e.target.value })}
-          placeholder="题目原文，公式用纯文本写法即可"
+          placeholder="题目原文；公式用 LaTeX 并用 $ 包起来，如 $\lim_{x \to 0} \frac{\sin x}{x}$"
           rows={4}
         />
+        <p className="text-[11px] text-muted-foreground">
+          保存后公式会自动排版。中文说明写在 $ 外面就行，不用转义
+        </p>
       </div>
 
       {draft.type === 'choice' && (

@@ -4,6 +4,7 @@ import { CirclePlus, PencilRuler, Search } from 'lucide-react';
 import { listQuestions } from '@/lib/db';
 import { QUESTION_TYPE_META, SUBJECTS, chapterById, subjectByKey } from '@/data/taxonomy';
 import { MASTERY_META, masteryOf, summarize, typeName } from '@/lib/question';
+import { latexToPlain } from '@/lib/plain';
 import { dueList } from '@/lib/review';
 import type { IQuestion, Mastery } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -220,7 +221,7 @@ export default function BankPage() {
                         </span>
                       </div>
                       <p className="line-clamp-2 text-[13px] leading-relaxed text-foreground">
-                        {q.stem || '（无题干文字，查看图片）'}
+                        {q.stem ? latexToPlain(q.stem) : '（无题干文字，查看图片）'}
                       </p>
                     </div>
                   </div>

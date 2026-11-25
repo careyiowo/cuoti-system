@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Check, Home, PencilRuler, X } from 'lucide-react';
 import { toast } from 'sonner';
 import MasteryMark from '@/components/MasteryMark';
+import MathText from '@/components/MathText';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { chapterById, subjectByKey } from '@/data/taxonomy';
@@ -130,22 +131,28 @@ export default function PracticeResultPage() {
                 <MasteryMark mastery={masteryOf(q)} withLabel />
               </div>
 
-              <p className="mt-2 whitespace-pre-wrap text-[13px] leading-6 text-foreground">
-                {q.stem || '（这道题只有图片）'}
-              </p>
+              {q.stem ? (
+                <MathText text={q.stem} className="mt-2 text-[13px] leading-7 text-foreground" />
+              ) : (
+                <p className="mt-2 text-[13px] text-muted-foreground">（这道题只有图片）</p>
+              )}
 
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <div className="rounded-sm border border-border px-3 py-2">
                   <div className="text-[11px] text-muted-foreground">你的答案</div>
-                  <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-foreground">
-                    {response?.answer?.trim() || '（未作答）'}
-                  </p>
+                  {response?.answer?.trim() ? (
+                    <MathText text={response.answer} className="mt-0.5 text-[13px] leading-7 text-foreground" />
+                  ) : (
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">（未作答）</p>
+                  )}
                 </div>
                 <div className="rounded-sm border border-border px-3 py-2">
                   <div className="text-[11px] text-muted-foreground">标准答案</div>
-                  <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-foreground">
-                    {q.answer || '未录入'}
-                  </p>
+                  {q.answer ? (
+                    <MathText text={q.answer} className="mt-0.5 text-[13px] leading-7 text-foreground" />
+                  ) : (
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">未录入</p>
+                  )}
                 </div>
               </div>
 
@@ -155,11 +162,17 @@ export default function PracticeResultPage() {
                 </p>
               )}
 
-              {(correct === false || correct === null) && (                <div className="mt-3 rounded-sm bg-muted/70 px-3 py-2.5">
+              {(correct === false || correct === null) && (
+                <div className="mt-3 rounded-sm bg-muted/70 px-3 py-2.5">
                   <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">解析</div>
-                  <p className="mt-1 whitespace-pre-wrap text-[13px] leading-7 text-foreground">
-                    {q.solution || '这道题还没录入解析'}
-                  </p>
+                  {q.solution ? (
+                    <MathText
+                      text={q.solution}
+                      className="mt-1.5 border-l-2 border-primary/25 pl-3 text-[13px] leading-8 text-foreground"
+                    />
+                  ) : (
+                    <p className="mt-1 text-[13px] text-muted-foreground">这道题还没录入解析</p>
+                  )}
                 </div>
               )}
 

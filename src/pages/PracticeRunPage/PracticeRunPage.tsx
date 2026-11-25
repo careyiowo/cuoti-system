@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import AnswerSheet from '@/components/AnswerSheet';
+import MathText from '@/components/MathText';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -128,9 +129,13 @@ export default function PracticeRunPage() {
           <span>{typeName(question.type)}</span>
         </div>
 
-        <p className="mt-3 whitespace-pre-wrap text-[14px] leading-7 text-foreground">
-          {question.stem || '（这道题只有图片，请在纸上作答）'}
-        </p>
+        {question.stem ? (
+          <MathText text={question.stem} className="mt-3 text-[14px] leading-8 text-foreground" />
+        ) : (
+          <p className="mt-3 text-[14px] leading-7 text-muted-foreground">
+            （这道题只有图片，请在纸上作答）
+          </p>
+        )}
 
         {question.wrongAnswer && (
           <div className="mt-3 flex items-baseline gap-2 border-l-2 border-destructive/50 bg-destructive/5 py-1.5 pl-2.5">
@@ -163,7 +168,7 @@ export default function PracticeRunPage() {
                   >
                     {option.label}
                   </span>
-                  <span className="leading-6">{option.text}</span>
+                  <MathText text={option.text} className="min-w-0 flex-1 leading-7" />
                 </button>
               );
             })}

@@ -101,6 +101,13 @@ function collectRoutePaths(srcDir: string): string[] {
 
 export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss(), miaodaOutputPlugin(), sparkJsonPlugin()],
+  server: {
+    // 默认的 localhost 在 Windows 上会绑到 IPv6 的 ::1，用 127.0.0.1 打开就连不上。
+    // 这里显式绑 IPv4 回环，同时保留 localhost 域名的正常访问。
+    host: '127.0.0.1',
+    port: 27183,
+    strictPort: true,
+  },
   // 生产构建：JS/CSS 引用带 CDN 前缀（无 CDN 时退回 base path）；dev 恒为 /
   base: command === 'build' ? cdnPrefix || basePath : '/',
   define: {

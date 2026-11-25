@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type DragEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Camera, ImagePlus, Info, Loader2, Settings2, Sparkles, Trash2 } from 'lucide-react';
@@ -11,6 +11,7 @@ import { recognizeQuestion, solveQuestion } from '@/lib/ai';
 import { loadAiSettings } from '@/lib/settings';
 import { compressImage } from '@/lib/image';
 import { saveImage, saveQuestion } from '@/lib/db';
+import { cn } from '@/lib/utils';
 
 interface IImageDraft {
   key: string;
@@ -26,6 +27,23 @@ function readAsDataUrl(file: File): Promise<string> {
   });
 }
 
+const IMAGE_EXT = /\.(jpe?g|png|webp|gif|bmp|heic|heif|avif)$/i;
+
+/** 微信拖出来的图片有时没有 MIME，只能靠扩展名兜底 */
+function isImageFile(file: File): boolean {
+  return file.type.startsWith('image/') || IMAGE_EXT.test(file.name);
+}
+
+/** 从拖拽事件里取文件：优先 files，个别来源只给 items */
+function filesFromDrop(transfer: DataTransfer): File[] {
+  if (transfer.files && transfer.files.length > 0) return Array.from(transfer.files);
+  if (!transfer.items) return [];
+  return Array.from(transfer.items)
+    .filter((item) => item.kind === 'file')
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => file !== null);
+}
+
 export default function UploadPage() {
   const navigate = useNavigate();
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -33,6 +51,9 @@ export default function UploadPage() {
   const seq = useRef(0);
 
   const [images, setImages] = useState<IImageDraft[]>([]);
+  /** 同步保存一份图片列表，拖拽后要立刻拿它去识别，不能等 state 更新 */
+  const imagesRef = useRef<IImageDraft[]>([]);
+  const [dragging, setDragging] = useState(false);
   const [draft, setDraft] = useState<IQuestionDraft>(emptyDraft);
   const [mode, setMode] = useState<'capture' | 'edit'>('capture');
   const [reading, setReading] = useState(false);
@@ -41,37 +62,61 @@ export default function UploadPage() {
   /** 答案与解析是不是 AI 解出来的，保存时据此打来源标记 */
   const [aiSolved, setAiSolved] = useState(false);
 
+  const removeImage = (key: string) => {
+    const next = imagesRef.current.filter((item) => item.key !== key);
+    imagesRef.current = next;
+    setImages(next);
+  };
+
+  /** 把图片读进内存并压缩，返回这次新增的条目；单张失败不影响其它 */
+  const addFiles = async (files: File[]): Promise<IImageDraft[]> => {
+    if (files.length === 0) return [];
+    setReading(true);
+    const added: IImageDraft[] = [];
+    let failed = 0;
+    for (const file of files) {
+      try {
+        const dataUrl = await compressImage(await readAsDataUrl(file));
+        added.push({ key: `img-${seq.current++}`, dataUrl });
+      } catch {
+        failed += 1;
+      }
+    }
+    if (added.length > 0) {
+      const next = [...imagesRef.current, ...added];
+      imagesRef.current = next;
+      setImages(next);
+    }
+    setReading(false);
+    if (failed > 0) toast.error(`有 ${failed} 张图片没读出来，换一张试试`);
+    return added;
+  };
+
   const handlePick = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setReading(true);
-    try {
-      const urls = await Promise.all(
-        Array.from(files).map(async (file) => compressImage(await readAsDataUrl(file))),
-      );
-      setImages((prev) => [
-        ...prev,
-        ...urls.map((dataUrl) => ({ key: `img-${seq.current++}`, dataUrl })),
-      ]);
-    } catch {
-      toast.error('有图片没读出来，换一张试试');
-    } finally {
-      setReading(false);
+    const picked = Array.from(files).filter(isImageFile);
+    if (picked.length === 0) {
+      toast.error('选中的不是图片');
+      return;
     }
+    await addFiles(picked);
   };
 
-  const removeImage = (key: string) => {
-    setImages((prev) => prev.filter((item) => item.key !== key));
-  };
-
-  const handleRecognize = async () => {
-    if (images.length === 0) {
+  /** 识别指定图片并进入编辑态；只拍到题干时顺手让文本模型解一遍 */
+  const recognize = async (urls: string[]) => {
+    if (urls.length === 0) {
       toast.error('先加题目图片');
+      return;
+    }
+    const settings = loadAiSettings();
+    if (!settings.apiKey.trim()) {
+      toast.error('还没配 API Key，图片已经加进来了，可以先手动填写');
+      setMode('edit');
       return;
     }
     setBusy(true);
     try {
-      const settings = loadAiSettings();
-      const result = await recognizeQuestion(images.map((i) => i.dataUrl), settings);
+      const result = await recognizeQuestion(urls, settings);
       const nextDraft: IQuestionDraft = {
         subject: result.subject,
         chapterId: result.chapterId,
@@ -121,6 +166,26 @@ export default function UploadPage() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const handleRecognize = () => {
+    void recognize(imagesRef.current.map((item) => item.dataUrl));
+  };
+
+  /** 从微信把照片直接拖进虚线框：先加图，再直接识别 */
+  const handleDrop = async (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragging(false);
+    if (mode !== 'capture') return;
+    const dropped = filesFromDrop(event.dataTransfer).filter(isImageFile);
+    if (dropped.length === 0) {
+      toast.error('拖进来的不是图片文件');
+      return;
+    }
+    const added = await addFiles(dropped);
+    if (added.length === 0) return;
+    await recognize(imagesRef.current.map((item) => item.dataUrl));
   };
 
   /** 改了题干或对 AI 结果不放心时，重解一遍覆盖答案与解析 */
@@ -186,11 +251,34 @@ export default function UploadPage() {
 
       {mode === 'capture' ? (
         <>
-          <Card className="rounded-sm">
+          <Card
+            className="rounded-sm"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => event.preventDefault()}
+          >
             <div className="p-4">
-              <div className="flex flex-col items-center gap-3 rounded-sm border border-dashed border-border px-4 py-10">
+              <div
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setDragging(true);
+                }}
+                onDragLeave={(event) => {
+                  const next = event.relatedTarget as Node | null;
+                  if (!next || !event.currentTarget.contains(next)) setDragging(false);
+                }}
+                onDrop={handleDrop}
+                className={cn(
+                  'flex flex-col items-center gap-3 rounded-sm border border-dashed px-4 py-10 transition-colors',
+                  dragging ? 'border-primary bg-primary/8' : 'border-border',
+                )}
+              >
                 <p className="text-[13px] text-muted-foreground">
-                  {reading ? '正在读取图片' : '拍题干那一页就行，答案页拍了更好'}
+                  {dragging
+                    ? '松手就加进题库，并自动识别'
+                    : reading
+                      ? '正在读取图片'
+                      : '拍题干那一页就行，答案页拍了更好'}
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   <Button type="button" onClick={() => cameraRef.current?.click()}>
@@ -202,6 +290,9 @@ export default function UploadPage() {
                     从相册选
                   </Button>
                 </div>
+                <p className="text-[11px] text-muted-foreground">
+                  也可以把微信聊天窗口里的照片直接拖进这个方框
+                </p>
                 <input
                   ref={cameraRef}
                   type="file"

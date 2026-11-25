@@ -17,7 +17,7 @@ export interface IAiSettings {
 export const DEFAULT_AI_SETTINGS: IAiSettings = {
   baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
   apiKey: '',
-  model: 'qwen3.8-27b',
+  model: 'qwen3.7-plus',
 };
 
 export function loadAiSettings(): IAiSettings {

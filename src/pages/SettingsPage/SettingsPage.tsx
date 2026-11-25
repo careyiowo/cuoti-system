@@ -101,7 +101,7 @@ export default function SettingsPage() {
             <Input
               value={settings.model}
               onChange={(e) => patch({ model: e.target.value })}
-              placeholder="qwen3.8-27b"
+              placeholder="qwen3.7-plus"
             />
           </div>
         </div>
@@ -126,10 +126,10 @@ export default function SettingsPage() {
         <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">怎么填</div>
         <ul className="mt-2 space-y-1.5 text-[13px] leading-6 text-foreground">
           <li>
-            默认模型 qwen3.8-27b：它是原生视觉语言模型，百炼免费额度里给了 100 万 tokens，够识别 150 道左右。
+            默认模型 qwen3.7-plus：原生视觉模型，能直接看图，百炼免费额度里给了 100 万 tokens，够识别 150 道左右。
           </li>
           <li>
-            免费额度用完后，把模型名换成 qwen3.8-flash：输入 0.8 元、输出 2.7 元每百万 tokens，每题约半分钱，响应也更快。
+            免费额度用完后，把模型名换成 qwen3.8-flash：输入 0.8 元、输出 2.7 元每百万 tokens，每题不到一分钱，响应也更快。
           </li>
           <li>
             填好后点「测试连接」：返回成功说明地址、Key、模型名三样都通；报 404 多半是模型名写错，去百炼控制台核对可用的模型 ID。

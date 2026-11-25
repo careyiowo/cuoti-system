@@ -55,15 +55,26 @@ export default function PracticeSetupPage() {
     ? subjects.flatMap((key) => chaptersOf(key))
     : SUBJECTS.flatMap((s) => s.chapters);
 
+  // 「已掌握」不当作白名单筛选项，而是“允不允许抽已掌握”的开关：
+  // 勾上它 = 把已标记掌握的题也放进池子；另外三项照常做白名单筛选。
+  const activeMasteries: Mastery[] = masteries.filter((m) => m !== 'mastered');
+  const includeMastered = masteries.includes('mastered');
+
   const basePool = questions.filter((q) => {
     if (subjects.length > 0 && !subjects.includes(q.subject)) return false;
     if (chapters.length > 0 && !chapters.includes(q.chapterId)) return false;
     if (types.length > 0 && !types.includes(q.type)) return false;
-    if (masteries.length > 0 && !masteries.includes(masteryOf(q))) return false;
+    if (activeMasteries.length > 0 && !activeMasteries.includes(masteryOf(q))) return false;
     return true;
   });
 
-  const pool = order === 'due' ? dueList(basePool) : basePool;
+  // 已掌握的题默认不进答题卡，抽题和到期复习都跳过它们
+  const baseFiltered = includeMastered
+    ? basePool
+    : basePool.filter((q) => masteryOf(q) !== 'mastered');
+  const skippedMastered = basePool.length - baseFiltered.length;
+
+  const pool = order === 'due' ? dueList(baseFiltered) : baseFiltered;
 
   const scopeLabel = [
     subjects.length === 0
@@ -153,7 +164,7 @@ export default function PracticeSetupPage() {
           ))}
         </Section>
 
-        <Section label="掌握状态" hint="查漏补缺时只勾「反复错」和「重做中」">
+        <Section label="掌握状态" hint="查漏补缺时只勾「反复错」和「重做中」；已标记掌握的不抽">
           {MASTERY_ORDER.map((m) => (
             <Chip
               key={m}
@@ -164,6 +175,20 @@ export default function PracticeSetupPage() {
             </Chip>
           ))}
         </Section>
+
+        {includeMastered && activeMasteries.length > 0 ? (
+          <p className="-mt-2 border-l-2 border-warning/50 bg-warning/6 py-1.5 pl-2.5 text-[11px] leading-5 text-muted-foreground">
+            勾了「已掌握」，但同时也筛了具体状态，白名单优先，已掌握的题这次仍不会被抽到
+          </p>
+        ) : includeMastered ? (
+          <p className="-mt-2 border-l-2 border-warning/50 bg-warning/6 py-1.5 pl-2.5 text-[11px] leading-5 text-muted-foreground">
+            这组会把已标记掌握的题也抽进来，抽中了就再核对一遍
+          </p>
+        ) : skippedMastered > 0 ? (
+          <p className="-mt-2 border-l-2 border-primary/40 bg-primary/5 py-1.5 pl-2.5 text-[11px] leading-5 text-muted-foreground">
+            已标记掌握的有 {skippedMastered} 道，这次不进答题卡；想复习它们，在上面勾选「已掌握」
+          </p>
+        ) : null}
 
         <div className="space-y-2 border-t border-border pt-4">
           <div className="text-[13px] text-foreground">做几道</div>
@@ -210,6 +235,10 @@ export default function PracticeSetupPage() {
 
       {questions.length === 0 ? (
         <p className="text-[12px] text-muted-foreground">题库还是空的，先去收集几道错题再来组卷</p>
+      ) : pool.length === 0 && skippedMastered > 0 ? (
+        <p className="text-[12px] text-muted-foreground">
+          符合当前条件的题都已标记为掌握，被跳过了。要复习它们，就在「掌握状态」里勾上「已掌握」。
+        </p>
       ) : order === 'due' && pool.length === 0 ? (
         <p className="text-[12px] text-muted-foreground">
           今天没有到期的题。复习间隔是按连续做对次数算的：错过的题隔一天就回来，连对越多隔得越久。换个选题方式，或者明天再来。

@@ -45,7 +45,7 @@ export default function BankPage() {
   }, []);
 
   const stats = summarize(questions);
-  const due = dueList(questions);
+  const due = dueList(questions.filter((q) => masteryOf(q) !== 'mastered'));
   const chapterOptions = subject === 'all' ? [] : (subjectByKey(subject)?.chapters ?? []);
 
   const visible = questions.filter((q) => {

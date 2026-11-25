@@ -1,0 +1,59 @@
+# ===== 系统与编辑器 =====
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# ===== IDE / 编辑器配置 =====
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ===== 日志与临时文件 =====
+*.log
+logs/
+*.tmp
+temp/
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ===== Node / 前端 =====
+node_modules/
+.npm/
+.yarn/
+.pnpm-store/
+coverage/
+.next/
+.nuxt/
+dist-ssr/
+
+# ===== 构建产物 =====
+out/
+target/
+bin/
+obj/
+
+# ===== 环境变量与密钥 =====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.*

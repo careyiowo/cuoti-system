@@ -15,9 +15,9 @@ export interface IAiSettings {
 }
 
 export const DEFAULT_AI_SETTINGS: IAiSettings = {
-  baseUrl: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+  baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
   apiKey: '',
-  model: 'glm-4v-flash',
+  model: 'qwen3.8-flash',
 };
 
 export function loadAiSettings(): IAiSettings {

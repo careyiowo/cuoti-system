@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Save } from 'lucide-react';
+import { Loader2, PlugZap, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { loadAiSettings, saveAiSettings, type IAiSettings } from '@/lib/settings
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<IAiSettings>(loadAiSettings);
+  const [testing, setTesting] = useState(false);
 
   const patch = (part: Partial<IAiSettings>) => setSettings((prev) => ({ ...prev, ...part }));
 
@@ -19,6 +20,45 @@ export default function SettingsPage() {
       model: settings.model.trim(),
     });
     toast.success('已保存识别设置');
+  };
+
+  const test = async () => {
+    const baseUrl = settings.baseUrl.trim();
+    const apiKey = settings.apiKey.trim();
+    const model = settings.model.trim();
+    if (!baseUrl || !apiKey || !model) {
+      toast.error('三项都要填：接口地址、API Key、模型名');
+      return;
+    }
+    setTesting(true);
+    try {
+      const res = await fetch(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: '只回复两个字：可以' }],
+          max_tokens: 16,
+        }),
+      });
+      if (!res.ok) {
+        const detail = await res.text();
+        toast.error(`连接失败（${res.status}）：${detail.slice(0, 120)}`);
+        return;
+      }
+      const payload = (await res.json()) as {
+        choices?: { message?: { content?: unknown } }[];
+      };
+      const text = String(payload.choices?.[0]?.message?.content ?? '').trim();
+      toast.success(`连接成功，模型回了：${text.slice(0, 20)}`);
+    } catch {
+      toast.error('请求没发出去：这家接口可能不允许浏览器直连（跨域被拦），也可能网络不通');
+    } finally {
+      setTesting(false);
+    }
   };
 
   return (
@@ -41,7 +81,7 @@ export default function SettingsPage() {
           <Input
             value={settings.baseUrl}
             onChange={(e) => patch({ baseUrl: e.target.value })}
-            placeholder="https://open.bigmodel.cn/api/paas/v4/chat/completions"
+            placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
           />
         </div>
 
@@ -61,7 +101,7 @@ export default function SettingsPage() {
             <Input
               value={settings.model}
               onChange={(e) => patch({ model: e.target.value })}
-              placeholder="glm-4v-flash"
+              placeholder="qwen3.8-flash"
             />
           </div>
         </div>
@@ -71,16 +111,29 @@ export default function SettingsPage() {
             <Save className="size-4" strokeWidth={1.75} />
             保存
           </Button>
+          <Button variant="outline" onClick={test} disabled={testing}>
+            {testing ? (
+              <Loader2 className="size-4 animate-spin" strokeWidth={1.75} />
+            ) : (
+              <PlugZap className="size-4" strokeWidth={1.75} />
+            )}
+            {testing ? '测试中' : '测试连接'}
+          </Button>
         </div>
       </Card>
 
       <Card className="rounded-sm p-5">
         <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">怎么填</div>
         <ul className="mt-2 space-y-1.5 text-[13px] leading-6 text-foreground">
-          <li>默认接口是智谱开放平台的 OpenAI 兼容地址，模型用 glm-4v-flash（视觉识别，免费额度够用）。</li>
-          <li>需要装的是「看图回答问题」那一类模型，普通文本模型认不出题目。</li>
-          <li>换别家服务商时，接口地址要填到完整的 chat/completions 路径，返回格式必须是 OpenAI 兼容的。</li>
-          <li>如果提示跨域被拦截，说明这家服务的接口不允许浏览器直连，换一家或者手动录入。</li>
+          <li>
+            默认接的是阿里云百炼的 OpenAI 兼容地址，模型 qwen3.8-flash。Key 在 bailian.console.aliyun.com
+            的「API-KEY 管理」里创建，新账号有免费额度。
+          </li>
+          <li>
+            填好后点「测试连接」：返回成功说明地址、Key、模型名三样都通；报 404 多半是模型名写错，去百炼控制台核对当前可用的模型 ID。
+          </li>
+          <li>必须选「看图回答问题」的视觉模型，普通文本模型认不出题目。</li>
+          <li>百炼和火山方舟允许浏览器直连；智谱的接口不放行跨域，直连会被拦，要用它得另配后端中转。</li>
           <li>Key 只写在当前浏览器的本地存储里，不会上传到任何地方，但不要在公用电脑上填。</li>
         </ul>
       </Card>

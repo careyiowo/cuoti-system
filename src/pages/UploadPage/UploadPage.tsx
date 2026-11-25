@@ -9,6 +9,7 @@ import { Image } from '@/components/ui/image';
 import { emptyDraft, questionFromDraft, type IQuestionDraft } from '@/lib/draft';
 import { recognizeQuestion } from '@/lib/ai';
 import { loadAiSettings } from '@/lib/settings';
+import { compressImage } from '@/lib/image';
 import { saveImage, saveQuestion } from '@/lib/db';
 
 interface IImageDraft {
@@ -41,7 +42,9 @@ export default function UploadPage() {
     if (!files || files.length === 0) return;
     setReading(true);
     try {
-      const urls = await Promise.all(Array.from(files).map(readAsDataUrl));
+      const urls = await Promise.all(
+        Array.from(files).map(async (file) => compressImage(await readAsDataUrl(file))),
+      );
       setImages((prev) => [
         ...prev,
         ...urls.map((dataUrl) => ({ key: `img-${seq.current++}`, dataUrl })),

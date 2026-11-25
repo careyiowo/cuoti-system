@@ -1,8 +1,9 @@
 /**
  * EXPORTS:
  * listQuestions(), getQuestion(id), saveQuestion(q), deleteQuestion(id)
- * saveImage(dataUrl) -> id, getImage(id), getImages(ids)
+ * saveImage(dataUrl) -> id, getImage(id), getImages(ids), listAllImages(), putImageRecord(r)
  * listSessions(), getSession(id), saveSession(s), deleteSession(id)
+ * countAll() -> {questions, images, sessions}
  */
 
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
@@ -90,6 +91,28 @@ export async function getImages(ids: string[]): Promise<IImageRecord[]> {
     if (hit) records.push(hit);
   }
   return records;
+}
+
+/** 备份用：一次性取出全部图片记录 */
+export async function listAllImages(): Promise<IImageRecord[]> {
+  const db = await getDb();
+  return db.getAll('images');
+}
+
+/** 恢复用：按原 id 写回图片，避免 id 被重新生成导致题目引用对不上 */
+export async function putImageRecord(record: IImageRecord): Promise<void> {
+  const db = await getDb();
+  await db.put('images', record);
+}
+
+export async function countAll(): Promise<{ questions: number; images: number; sessions: number }> {
+  const db = await getDb();
+  const [questions, images, sessions] = await Promise.all([
+    db.count('questions'),
+    db.count('images'),
+    db.count('sessions'),
+  ]);
+  return { questions, images, sessions };
 }
 
 export async function listSessions(): Promise<ISession[]> {

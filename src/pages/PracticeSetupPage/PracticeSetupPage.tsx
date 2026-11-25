@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { QUESTION_TYPE_META, SUBJECTS, chaptersOf } from '@/data/taxonomy';
 import { MASTERY_META, masteryOf } from '@/lib/question';
-import { newId } from '@/lib/draft';
-import { listQuestions, saveSession } from '@/lib/db';
-import type { IQuestion, ISession, Mastery, QuestionType } from '@/lib/types';
+import { dueList } from '@/lib/review';
+import { createSession, shuffle } from '@/lib/session';
+import { listQuestions } from '@/lib/db';
+import type { IQuestion, Mastery, QuestionType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,26 +14,30 @@ import { cn } from '@/lib/utils';
 
 const MASTERY_ORDER: Mastery[] = ['new', 'reviewing', 'mastered', 'stuck'];
 
+type OrderMode = 'random' | 'wrong' | 'stale' | 'due';
+
+const ORDER_META: Record<OrderMode, { name: string; hint: string }> = {
+  random: { name: '随机抽题', hint: '题库里随便抽' },
+  wrong: { name: '优先错得多', hint: '错得越多越靠前' },
+  stale: { name: '优先久没做', hint: '离上次重做越久越靠前' },
+  due: { name: '只取今日到期', hint: '按复习间隔算今天该做的' },
+};
+
+const ORDER_KEYS: OrderMode[] = ['random', 'wrong', 'stale', 'due'];
+
 function toggleValue<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
 
-function shuffle<T>(list: T[]): T[] {
-  const copy = [...list];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
-
 export default function PracticeSetupPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [questions, setQuestions] = useState<IQuestion[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [chapters, setChapters] = useState<string[]>([]);
   const [types, setTypes] = useState<QuestionType[]>([]);
   const [masteries, setMasteries] = useState<Mastery[]>([]);
+  const [order, setOrder] = useState<OrderMode>(params.get('mode') === 'due' ? 'due' : 'random');
   const [count, setCount] = useState(10);
   const [starting, setStarting] = useState(false);
 
@@ -50,7 +55,7 @@ export default function PracticeSetupPage() {
     ? subjects.flatMap((key) => chaptersOf(key))
     : SUBJECTS.flatMap((s) => s.chapters);
 
-  const pool = questions.filter((q) => {
+  const basePool = questions.filter((q) => {
     if (subjects.length > 0 && !subjects.includes(q.subject)) return false;
     if (chapters.length > 0 && !chapters.includes(q.chapterId)) return false;
     if (types.length > 0 && !types.includes(q.type)) return false;
@@ -58,28 +63,39 @@ export default function PracticeSetupPage() {
     return true;
   });
 
+  const pool = order === 'due' ? dueList(basePool) : basePool;
+
   const scopeLabel = [
     subjects.length === 0
       ? '全部科目'
       : subjects.map((key) => SUBJECTS.find((s) => s.key === key)?.short ?? key).join('、'),
     chapters.length === 0 ? '全部章节' : `${chapters.length} 个章节`,
     types.length === 0 ? '全部题型' : types.map((t) => QUESTION_TYPE_META.find((m) => m.key === t)?.short).join('、'),
+    ORDER_META[order].name,
   ].join(' · ');
 
   const start = async () => {
     if (pool.length === 0) return;
     setStarting(true);
     const take = Math.max(1, Math.min(count || 1, pool.length));
-    const picked = shuffle(pool).slice(0, take);
-    const session: ISession = {
-      id: newId(),
-      createdAt: Date.now(),
-      finishedAt: null,
-      questionIds: picked.map((q) => q.id),
-      responses: {},
-      scopeLabel: `${scopeLabel} · ${picked.length} 题`,
-    };
-    await saveSession(session);
+
+    let ranked: IQuestion[];
+    if (order === 'wrong') {
+      ranked = [...pool].sort(
+        (a, b) => b.wrong - a.wrong || b.attempts - a.attempts || a.createdAt - b.createdAt,
+      );
+    } else if (order === 'stale') {
+      ranked = [...pool].sort(
+        (a, b) => (a.lastPracticedAt ?? 0) - (b.lastPracticedAt ?? 0),
+      );
+    } else if (order === 'due') {
+      ranked = pool;
+    } else {
+      ranked = shuffle(pool);
+    }
+
+    const picked = shuffle(ranked.slice(0, take));
+    const session = await createSession(picked, scopeLabel);
     navigate(`/practice/run/${session.id}`);
   };
 
@@ -93,6 +109,14 @@ export default function PracticeSetupPage() {
       </header>
 
       <Card className="space-y-5 rounded-sm p-5">
+        <Section label="选题方式" hint={ORDER_META[order].hint}>
+          {ORDER_KEYS.map((key) => (
+            <Chip key={key} active={order === key} onClick={() => setOrder(key)}>
+              {ORDER_META[key].name}
+            </Chip>
+          ))}
+        </Section>
+
         <Section label="科目" hint="不选就是全部科目">
           {SUBJECTS.map((s) => (
             <Chip
@@ -184,9 +208,13 @@ export default function PracticeSetupPage() {
         </Button>
       </div>
 
-      {questions.length === 0 && (
+      {questions.length === 0 ? (
         <p className="text-[12px] text-muted-foreground">题库还是空的，先去收集几道错题再来组卷</p>
-      )}
+      ) : order === 'due' && pool.length === 0 ? (
+        <p className="text-[12px] text-muted-foreground">
+          今天没有到期的题。复习间隔是按连续做对次数算的：错过的题隔一天就回来，连对越多隔得越久。换个选题方式，或者明天再来。
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { CirclePlus, PencilRuler, Search } from 'lucide-react';
 import { listQuestions } from '@/lib/db';
 import { QUESTION_TYPE_META, SUBJECTS, chapterById, subjectByKey } from '@/data/taxonomy';
 import { MASTERY_META, masteryOf, summarize, typeName } from '@/lib/question';
+import { dueList } from '@/lib/review';
 import type { IQuestion, Mastery } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -43,6 +44,7 @@ export default function BankPage() {
   }, []);
 
   const stats = summarize(questions);
+  const due = dueList(questions);
   const chapterOptions = subject === 'all' ? [] : (subjectByKey(subject)?.chapters ?? []);
 
   const visible = questions.filter((q) => {
@@ -90,6 +92,20 @@ export default function BankPage() {
           </div>
         ))}
       </section>
+
+      {due.length > 0 && (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-primary/40 bg-card px-4 py-3">
+          <div className="space-y-1">
+            <p className="text-[13px] text-foreground">
+              今天有 <span className="font-serif text-lg tabular-nums text-primary">{due.length}</span> 道题该重做
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              做错的题隔一天就回来，连对越多间隔拉得越长：1 → 2 → 4 → 7 → 15 → 30 天
+            </p>
+          </div>
+          <Button onClick={() => navigate('/practice?mode=due')}>开始今日复习</Button>
+        </section>
+      )}
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center gap-1.5">

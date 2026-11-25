@@ -4,7 +4,7 @@
  * masteryOf(q)
  * normalizeAnswer(text)
  * checkAnswer(q, response) -> boolean|null
- * applyAttempt(q, correct) -> IQuestion
+ * applyAttempt(q, correct, response?) -> IQuestion
  * summarize(questions) -> {total,new,reviewing,mastered,stuck,bySubject}
  * typeName(type)
  */
@@ -70,8 +70,12 @@ export function checkAnswer(q: IQuestion, response: string): boolean | null {
   return alternatives.includes(normalizeAnswer(response));
 }
 
-export function applyAttempt(q: IQuestion, correct: boolean): IQuestion {
+export function applyAttempt(q: IQuestion, correct: boolean, response?: string): IQuestion {
   const now = Date.now();
+  // 做错时把这次的答案记下来，做对后不清空：之后复盘还能看到“上次错在哪个选项上”。
+  // 大题的文字答案没有比对价值，只对客观题记录。
+  const wrongAnswer =
+    correct || q.type === 'essay' ? (q.wrongAnswer ?? null) : (response ?? '').trim();
   return {
     ...q,
     attempts: q.attempts + 1,
@@ -80,6 +84,7 @@ export function applyAttempt(q: IQuestion, correct: boolean): IQuestion {
     streak: correct ? q.streak + 1 : 0,
     lastResult: correct ? 'correct' : 'wrong',
     lastPracticedAt: now,
+    wrongAnswer,
     updatedAt: now,
   };
 }

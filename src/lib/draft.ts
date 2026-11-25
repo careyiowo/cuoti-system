@@ -14,6 +14,8 @@ export interface IQuestionDraft {
   stem: string;
   options: IOption[];
   answer: string;
+  /** 上次错选（填）的答案，只在整理错题时手工补录用 */
+  wrongAnswer: string;
   solution: string;
   note: string;
 }
@@ -39,6 +41,7 @@ export function emptyDraft(): IQuestionDraft {
       { label: 'D', text: '' },
     ],
     answer: '',
+    wrongAnswer: '',
     solution: '',
     note: '',
   };
@@ -52,6 +55,7 @@ export function draftFromQuestion(q: IQuestion): IQuestionDraft {
     stem: q.stem,
     options: q.options.map((o) => ({ ...o })),
     answer: q.answer,
+    wrongAnswer: q.wrongAnswer ?? '',
     solution: q.solution,
     note: q.note,
   };
@@ -77,6 +81,7 @@ export function questionFromDraft(draft: IQuestionDraft, base?: IQuestion): IQue
     lastResult: base?.lastResult ?? null,
     lastPracticedAt: base?.lastPracticedAt ?? null,
     solutionSource: base?.solutionSource ?? null,
+    wrongAnswer: draft.wrongAnswer.trim() || null,
     createdAt: base?.createdAt ?? now,
     updatedAt: now,
   };

@@ -40,7 +40,7 @@ export default function PracticeResultPage() {
     if (!session) return;
     setGrading(true);
     try {
-      const updated = applyAttempt(q, correct);
+      const updated = applyAttempt(q, correct, session.responses[q.id]?.answer ?? '');
       await saveQuestion(updated);
       const previous = session.responses[q.id] ?? { answer: '', correct: null };
       const next: ISession = {
@@ -149,8 +149,13 @@ export default function PracticeResultPage() {
                 </div>
               </div>
 
-              {(correct === false || correct === null) && (
-                <div className="mt-3 rounded-sm bg-muted/70 px-3 py-2.5">
+              {correct === true && q.wrongAnswer && (
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  上次你的答案是 <span className="text-destructive">{q.wrongAnswer}</span>，这回改对了
+                </p>
+              )}
+
+              {(correct === false || correct === null) && (                <div className="mt-3 rounded-sm bg-muted/70 px-3 py-2.5">
                   <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">解析</div>
                   <p className="mt-1 whitespace-pre-wrap text-[13px] leading-7 text-foreground">
                     {q.solution || '这道题还没录入解析'}

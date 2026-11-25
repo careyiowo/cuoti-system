@@ -71,7 +71,7 @@ export default function PracticeRunPage() {
         const correct = checkAnswer(q, text);
         responses[q.id] = { answer: text, correct };
         if (correct !== null) {
-          await saveQuestion(applyAttempt(q, correct));
+          await saveQuestion(applyAttempt(q, correct, text));
         }
       }
       await saveSession({ ...session, finishedAt: Date.now(), responses });
@@ -131,6 +131,13 @@ export default function PracticeRunPage() {
         <p className="mt-3 whitespace-pre-wrap text-[14px] leading-7 text-foreground">
           {question.stem || '（这道题只有图片，请在纸上作答）'}
         </p>
+
+        {question.wrongAnswer && (
+          <div className="mt-3 flex items-baseline gap-2 border-l-2 border-destructive/50 bg-destructive/5 py-1.5 pl-2.5">
+            <span className="shrink-0 text-[11px] tracking-[0.14em] text-destructive">上次错选</span>
+            <span className="text-[12px] leading-5 text-foreground">{question.wrongAnswer}</span>
+          </div>
+        )}
 
         {question.type === 'choice' && (
           <div className="mt-4 space-y-1.5">

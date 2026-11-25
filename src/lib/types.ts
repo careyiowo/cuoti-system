@@ -1,7 +1,7 @@
 /**
  * EXPORTS:
  * IOption{label,text}
- * IQuestion{id,subject,chapterId,type,stem,options,answer,solution,imageIds,note,attempts,correct,lastResult,lastPracticedAt,createdAt,updatedAt}
+ * IQuestion{id,subject,chapterId,type,stem,options,answer,solution,imageIds,note,attempts,correct,streak,wrong,lastResult,lastPracticedAt,solutionSource,wrongAnswer,createdAt,updatedAt}
  * IImageRecord{id,dataUrl,createdAt}
  * IResponse{answer,correct}
  * ISession{id,createdAt,finishedAt,questionIds,responses,scopeLabel}
@@ -45,6 +45,8 @@ export interface IQuestion {
   lastPracticedAt: number | null;
   /** 答案解析的来源，旧数据可能没有这个字段 */
   solutionSource?: SolutionSource | null;
+  /** 最近一次做错时选（填）的答案，做对后保留，用于复盘“我上次是怎么错的” */
+  wrongAnswer?: string | null;
   createdAt: number;
   updatedAt: number;
 }

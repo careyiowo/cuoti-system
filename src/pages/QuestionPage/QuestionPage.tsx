@@ -215,6 +215,11 @@ export default function QuestionPage() {
           <p className="mt-1.5 whitespace-pre-wrap text-[14px] text-foreground">
             {question.answer || '未录入'}
           </p>
+          {question.wrongAnswer && (
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              上次错选 <span className="text-destructive">{question.wrongAnswer}</span>
+            </p>
+          )}
         </Card>
         <Card className="rounded-sm p-4">
           <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">作答记录</div>

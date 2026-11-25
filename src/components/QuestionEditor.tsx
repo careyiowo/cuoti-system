@@ -150,7 +150,7 @@ export default function QuestionEditor({ draft, onChange }: QuestionEditorProps)
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-1.5">
           <Label className="text-[12px] text-muted-foreground">
             标准答案（选择题写字母，填空题多个答案用分号分隔）
@@ -161,6 +161,16 @@ export default function QuestionEditor({ draft, onChange }: QuestionEditorProps)
             placeholder="如 B，或 2;1/2"
           />
         </div>
+        {draft.type !== 'essay' && (
+          <div className="space-y-1.5">
+            <Label className="text-[12px] text-muted-foreground">上次错选（可选）</Label>
+            <Input
+              value={draft.wrongAnswer}
+              onChange={(e) => patch({ wrongAnswer: e.target.value })}
+              placeholder="卷面上错的那项，如 B"
+            />
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label className="text-[12px] text-muted-foreground">备注（可选）</Label>
           <Input

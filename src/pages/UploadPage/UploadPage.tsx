@@ -82,6 +82,7 @@ export default function UploadPage() {
             ? result.options
             : ['A', 'B', 'C', 'D'].map((label) => ({ label, text: '' })),
         answer: result.answer,
+        wrongAnswer: result.wrongAnswer,
         solution: result.solution,
         note: '',
       };

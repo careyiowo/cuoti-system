@@ -1,6 +1,6 @@
 /**
  * EXPORTS:
- * IRecognizedDraft{subject,chapterId,type,stem,options,answer,solution}
+ * IRecognizedDraft{subject,chapterId,type,stem,options,answer,solution,wrongAnswer}
  * ISolveInput{subject,type,stem,options}
  * ISolveResult{answer,solution}
  * recognizeQuestion(imageDataUrls, settings) -> IRecognizedDraft
@@ -19,6 +19,8 @@ export interface IRecognizedDraft {
   options: IOption[];
   answer: string;
   solution: string;
+  /** 卷面上学生自己做的痕迹（圈出、划掉、涂的选项），看不到时为空串 */
+  wrongAnswer: string;
 }
 
 export interface ISolveInput {
@@ -50,6 +52,7 @@ ${TAXONOMY_TEXT}
 - stem：题干原文，公式用纯文本写法（如 x^2、∫、lim）
 - options：选择题的选项数组，每项 {"label":"A","text":"选项内容"}；不是选择题时给 []
 - answer：标准答案。选择题只写字母（如 A 或 AB）；填空题写答案原文，多个答案用分号分隔；解答题写最终结论。图片里没有答案信息时给空字符串
+- wrongAnswer：卷面上“学生自己做的痕迹”对应的答案——铅笔圈出的选项、划掉的选项、答题卡上涂黑的那一项、或者学生手写的错误答案。选择题只写字母（如 B）。必须和印刷体标准答案区分开：红笔批改的对勾叉不算、书上的印刷答案也不算。看不到任何作答痕迹时给空字符串
 - solution：完整解题步骤与解析。图片里没有时给空字符串
 
 如果有多张图片，可能是题目页加答案页，请合起来识别同一道题。`;
@@ -125,6 +128,7 @@ function toDraft(raw: unknown): IRecognizedDraft {
     options,
     answer: asString(data.answer),
     solution: asString(data.solution),
+    wrongAnswer: asString(data.wrongAnswer),
   };
 }
 

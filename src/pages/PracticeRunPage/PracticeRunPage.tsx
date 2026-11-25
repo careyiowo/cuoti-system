@@ -70,7 +70,7 @@ export default function PracticeRunPage() {
       for (const q of questions) {
         const text = answers[q.id] ?? '';
         const correct = checkAnswer(q, text);
-        responses[q.id] = { answer: text, correct };
+        responses[q.id] = { answer: text, correct, prevWrong: q.wrongAnswer ?? null };
         if (correct !== null) {
           await saveQuestion(applyAttempt(q, correct, text));
         }
@@ -135,13 +135,6 @@ export default function PracticeRunPage() {
           <p className="mt-3 text-[14px] leading-7 text-muted-foreground">
             （这道题只有图片，请在纸上作答）
           </p>
-        )}
-
-        {question.wrongAnswer && (
-          <div className="mt-3 flex items-baseline gap-2 border-l-2 border-destructive/50 bg-destructive/5 py-1.5 pl-2.5">
-            <span className="shrink-0 text-[11px] tracking-[0.14em] text-destructive">上次错选</span>
-            <span className="text-[12px] leading-5 text-foreground">{question.wrongAnswer}</span>
-          </div>
         )}
 
         {question.type === 'choice' && (

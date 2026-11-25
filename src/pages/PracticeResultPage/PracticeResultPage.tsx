@@ -153,14 +153,13 @@ export default function PracticeResultPage() {
                   ) : (
                     <p className="mt-0.5 text-[13px] text-muted-foreground">未录入</p>
                   )}
+                  {response?.prevWrong && (
+                    <p className="mt-1.5 border-t border-border pt-1.5 text-[11px] text-muted-foreground">
+                      上次错选 <span className="text-destructive">{response.prevWrong}</span>
+                    </p>
+                  )}
                 </div>
               </div>
-
-              {correct === true && q.wrongAnswer && (
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  上次你的答案是 <span className="text-destructive">{q.wrongAnswer}</span>，这回改对了
-                </p>
-              )}
 
               {(correct === false || correct === null) && (
                 <div className="mt-3 rounded-sm bg-muted/70 px-3 py-2.5">

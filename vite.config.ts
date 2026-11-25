@@ -107,6 +107,11 @@ export default defineConfig(({ command }) => ({
     host: '127.0.0.1',
     port: 27183,
     strictPort: true,
+    watch: {
+      // 编辑器安全写入时会先落一个 *.agent_infra_tmp_* 临时文件，
+      // Windows 上 watcher 抓到它常报 EBUSY 并直接崩掉 dev server，这里忽略掉。
+      ignored: ['**/*.agent_infra_tmp_*', '**/*.tmp', '**/dev-server.log'],
+    },
   },
   // 生产构建：JS/CSS 引用带 CDN 前缀（无 CDN 时退回 base path）；dev 恒为 /
   base: command === 'build' ? cdnPrefix || basePath : '/',

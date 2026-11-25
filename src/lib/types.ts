@@ -3,7 +3,7 @@
  * IOption{label,text}
  * IQuestion{id,subject,chapterId,type,stem,options,answer,solution,imageIds,note,attempts,correct,streak,wrong,lastResult,lastPracticedAt,solutionSource,wrongAnswer,createdAt,updatedAt}
  * IImageRecord{id,dataUrl,createdAt}
- * IResponse{answer,correct}
+ * IResponse{answer,correct,prevWrong}
  * ISession{id,createdAt,finishedAt,questionIds,responses,scopeLabel}
  * QuestionType = 'choice' | 'blank' | 'essay'
  * Mastery = 'new' | 'reviewing' | 'mastered' | 'stuck'
@@ -61,6 +61,11 @@ export interface IResponse {
   answer: string;
   /** 客观题由系统判定；主观题由用户自评，未评为 null */
   correct: boolean | null;
+  /**
+   * 交卷这一刻之前记在题目上的“上次错选”。
+   * 单独存一份快照，免得这题又做错时被本次答案覆盖，结果页就没得对比了。
+   */
+  prevWrong?: string | null;
 }
 
 export interface ISession {

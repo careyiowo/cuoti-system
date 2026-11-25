@@ -8,6 +8,7 @@
  */
 
 import { SUBJECTS } from '@/data/taxonomy';
+import { normalizeLatex } from '@/lib/format';
 import type { IAiSettings } from '@/lib/settings';
 import type { IOption, QuestionType } from '@/lib/types';
 
@@ -55,7 +56,10 @@ ${TAXONOMY_TEXT}
 - wrongAnswer：卷面上“学生自己做的痕迹”对应的答案——铅笔圈出的选项、划掉的选项、答题卡上涂黑的那一项、或者学生手写的错误答案。选择题只写字母（如 B）。必须和印刷体标准答案区分开：红笔批改的对勾叉不算、书上的印刷答案也不算。看不到任何作答痕迹时给空字符串
 - solution：完整解题步骤与解析，一步一行，每行的公式用 $...$ 包住（如 $\\frac{\\partial z}{\\partial x} = 2x$），不要写成没有 $ 的裸 LaTeX。图片里没有时给空字符串
 
-LaTeX 写法要求：不要用 \\text{} 包中文；不要输出 markdown 代码块；反斜杠在 JSON 里要转义成 \\。
+LaTeX 写法要求：
+- 不要用 \\text{} 包中文；不要输出 markdown 代码块；反斜杠在 JSON 里要转义成 \\\\。
+- 微分号直接写 d，前面留一个细空格：$\\int_0^{+\\infty} x e^{-x}\\,dx$。不要用 \\mathrm{d}、\\mathbf{d}、\\text{d} 包微分号，教材里的 d 就是斜体。
+- 相乘的变量之间留一个空格写成 $x e^{-x}$，不要粘成 $xe^{-x}$。
 
 如果有多张图片，可能是题目页加答案页，请合起来识别同一道题。`;
 }
@@ -79,7 +83,7 @@ function buildSolvePrompt(input: ISolveInput): string {
 - answer：${answerRule}
 - solution：完整解题步骤，一步一行
 
-公式一律用 LaTeX，并且每处都用 $ 包起来（如 $\\int_0^{+\\infty} xe^{-x}\\,dx$），中文说明放在 $ 外面。反斜杠在 JSON 里要转义成 \\\\。
+公式一律用 LaTeX，并且每处都用 $ 包起来（如 $\\int_0^{+\\infty} x e^{-x}\\,dx$），中文说明放在 $ 外面。微分号直接写 d，不要用 \\mathrm{d} 或 \\mathbf{d}。反斜杠在 JSON 里要转义成 \\\\。
 
 要求：一步一步推导，不要跳步，不要编造题目里没有的条件。如果信息不足以确定答案，answer 给空字符串，并在 solution 里说明缺什么。
 
@@ -119,7 +123,7 @@ function toDraft(raw: unknown): IRecognizedDraft {
         const entry = (item ?? {}) as Record<string, unknown>;
         return {
           label: asString(entry.label, String.fromCharCode(65 + index)),
-          text: asString(entry.text),
+          text: normalizeLatex(asString(entry.text)),
         };
       })
     : [];
@@ -128,10 +132,10 @@ function toDraft(raw: unknown): IRecognizedDraft {
     subject: subject.key,
     chapterId: chapter.id,
     type,
-    stem: asString(data.stem),
+    stem: normalizeLatex(asString(data.stem)),
     options,
-    answer: asString(data.answer),
-    solution: asString(data.solution),
+    answer: normalizeLatex(asString(data.answer)),
+    solution: normalizeLatex(asString(data.solution)),
     wrongAnswer: asString(data.wrongAnswer),
   };
 }
@@ -220,7 +224,7 @@ export async function solveQuestion(
 
   const data = extractJson(text) as Record<string, unknown>;
   return {
-    answer: asString(data.answer),
-    solution: asString(data.solution),
+    answer: normalizeLatex(asString(data.answer)),
+    solution: normalizeLatex(asString(data.solution)),
   };
 }

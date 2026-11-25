@@ -10,6 +10,7 @@
 
 import { useMemo } from 'react';
 import katex from 'katex';
+import { normalizeLatex } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 interface MathTextProps {
@@ -28,7 +29,7 @@ function escapeHtml(value: string): string {
 }
 
 function renderMath(source: string): string | null {
-  const trimmed = source.trim();
+  const trimmed = normalizeMath(source);
   if (!trimmed) return null;
   try {
     return katex.renderToString(trimmed, {
@@ -39,6 +40,14 @@ function renderMath(source: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * 统一微分号的写法。识别模型有时把 d 包成 \mathbf{d} / \mathrm{d} / \text{d}，
+ * 渲染出来是加粗正体 d，和教材的斜体 d 不一样；这里一律还原成 "\,dx"。
+ */
+function normalizeMath(source: string): string {
+  return normalizeLatex(source).replace(/[ \t]{2,}/g, ' ').trim();
 }
 
 /** 出现反斜杠命令或上下标，才有必要时不时地当公式试一下 */

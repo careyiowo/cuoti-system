@@ -1,5 +1,6 @@
 import { Plus, X } from 'lucide-react';
 import { QUESTION_TYPE_META, SUBJECTS, chaptersOf } from '@/data/taxonomy';
+import MathText from '@/components/MathText';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -189,9 +190,53 @@ export default function QuestionEditor({ draft, onChange }: QuestionEditorProps)
         <Textarea
           value={draft.solution}
           onChange={(e) => patch({ solution: e.target.value })}
-          placeholder="完整解题步骤，练习提交后展示"
+          placeholder="完整解题步骤，一步一行；公式用 $ 包起来"
           rows={5}
         />
+      </div>
+
+      <div className="space-y-2 rounded-sm border border-dashed border-border bg-muted/30 p-3">
+        <div className="flex items-baseline justify-between">
+          <span className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">效果预览</span>
+          <span className="text-[11px] text-muted-foreground">存进去以后就长这样</span>
+        </div>
+
+        {draft.stem.trim() ? (
+          <MathText text={draft.stem} className="text-[13px] leading-7 text-foreground" />
+        ) : (
+          <p className="text-[13px] text-muted-foreground">题干还没写</p>
+        )}
+
+        {draft.type === 'choice' && draft.options.some((o) => o.text.trim()) && (
+          <div className="space-y-0.5">
+            {draft.options.map((option) => (
+              <div key={option.label} className="flex gap-2.5">
+                <span className="w-4 shrink-0 text-[12px] leading-7 text-muted-foreground">{option.label}</span>
+                <MathText
+                  text={option.text || '（空）'}
+                  className="min-w-0 flex-1 text-[12px] leading-7 text-foreground"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {(draft.answer.trim() || draft.solution.trim()) && (
+          <div className="space-y-1 border-t border-border pt-2">
+            {draft.answer.trim() && (
+              <div className="flex gap-2 text-[12px] leading-6">
+                <span className="shrink-0 text-muted-foreground">答案</span>
+                <MathText text={draft.answer} className="min-w-0 flex-1 text-[12px] leading-6 text-foreground" />
+              </div>
+            )}
+            {draft.solution.trim() && (
+              <MathText
+                text={draft.solution}
+                className="border-l-2 border-primary/25 pl-2.5 text-[12px] leading-7 text-foreground"
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

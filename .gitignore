@@ -1,59 +1,64 @@
-# ===== 系统与编辑器 =====
-.DS_Store
-Thumbs.db
-desktop.ini
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Production builds
+dist/
+*/dist/
+build/
+*/build/
+
+# Environment files
+.env.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+/logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# IDE files
+.vscode/
+.idea/
 *.swp
+*.swo
 *~
 
-# ===== IDE / 编辑器配置 =====
-.idea/
-.vscode/
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# ===== 日志与临时文件 =====
-*.log
-logs/
-*.tmp
+# Temporary folders
+tmp/
 temp/
+.playwright-cli/
 
-# ===== Python =====
-__pycache__/
-*.py[cod]
-*.egg-info/
-.eggs/
-dist/
-build/
-.venv/
-venv/
-env/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.ipynb_checkpoints/
+# Lock files (keep package-lock.json for consistent installs)
+yarn.lock
+pnpm-lock.yaml
 
-# ===== Node / 前端 =====
-node_modules/
-.npm/
-.yarn/
-.pnpm-store/
-coverage/
-.next/
-.nuxt/
-dist-ssr/
+# Cache files
+.eslintcache
+*.tsbuildinfo
 
-# ===== 构建产物 =====
-out/
-target/
-bin/
-obj/
+# swc wasm
+.swc
 
-# ===== 环境变量与密钥 =====
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-secrets.*
+# Agent files
+.agent/

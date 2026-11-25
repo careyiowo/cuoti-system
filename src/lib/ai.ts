@@ -1,7 +1,10 @@
 /**
  * EXPORTS:
  * IRecognizedDraft{subject,chapterId,type,stem,options,answer,solution}
- * recognizeQuestion(imageDataUrls, settings) -> Promise<IRecognizedDraft>
+ * ISolveInput{subject,type,stem,options}
+ * ISolveResult{answer,solution}
+ * recognizeQuestion(imageDataUrls, settings) -> IRecognizedDraft
+ * solveQuestion(input, settings) -> ISolveResult  仅拍题干时由文本模型解题
  */
 
 import { SUBJECTS } from '@/data/taxonomy';
@@ -14,6 +17,18 @@ export interface IRecognizedDraft {
   type: QuestionType;
   stem: string;
   options: IOption[];
+  answer: string;
+  solution: string;
+}
+
+export interface ISolveInput {
+  subject: string;
+  type: QuestionType;
+  stem: string;
+  options: IOption[];
+}
+
+export interface ISolveResult {
   answer: string;
   solution: string;
 }
@@ -38,6 +53,31 @@ ${TAXONOMY_TEXT}
 - solution：完整解题步骤与解析。图片里没有时给空字符串
 
 如果有多张图片，可能是题目页加答案页，请合起来识别同一道题。`;
+}
+
+function buildSolvePrompt(input: ISolveInput): string {
+  const subjectName = SUBJECTS.find((s) => s.key === input.subject)?.name ?? input.subject;
+  const optionText = input.options
+    .filter((o) => o.text.trim())
+    .map((o) => `${o.label}. ${o.text}`)
+    .join('\n');
+
+  const answerRule =
+    input.type === 'choice'
+      ? '只写正确选项字母，多选连写，如 ABC'
+      : input.type === 'blank'
+        ? '只写填空答案，多个答案用分号分隔'
+        : '写最终结论与关键结果';
+
+  return `你是考研${subjectName}的助教，请解下面这道题。
+只输出一个 JSON 对象，不要 markdown 代码块，不要任何解释文字。字段：
+- answer：${answerRule}
+- solution：完整解题步骤，公式用纯文本写法（如 x^2、∫、lim、Σ、≤）
+
+要求：一步一步推导，不要跳步，不要编造题目里没有的条件。如果信息不足以确定答案，answer 给空字符串，并在 solution 里说明缺什么。
+
+题目：
+${input.stem}${optionText ? `\n\n选项：\n${optionText}` : ''}`;
 }
 
 function extractJson(text: string): unknown {
@@ -88,6 +128,37 @@ function toDraft(raw: unknown): IRecognizedDraft {
   };
 }
 
+async function postChat(
+  settings: IAiSettings,
+  payload: Record<string, unknown>,
+  networkHint: string,
+): Promise<string> {
+  let response: Response;
+  try {
+    response = await fetch(settings.baseUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${settings.apiKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error(networkHint);
+  }
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`接口返回 ${response.status}：${detail.slice(0, 200)}`);
+  }
+
+  const data = (await response.json()) as {
+    choices?: { message?: { content?: unknown } }[];
+  };
+  const rawContent = data.choices?.[0]?.message?.content;
+  return typeof rawContent === 'string' ? rawContent : String(rawContent ?? '');
+}
+
 export async function recognizeQuestion(
   imageDataUrls: string[],
   settings: IAiSettings,
@@ -100,38 +171,48 @@ export async function recognizeQuestion(
     { type: 'text' as const, text: buildPrompt() },
   ];
 
-  const body = {
-    model: settings.model,
-    temperature: 0.1,
-    messages: [{ role: 'user', content }],
-    // Qwen 系列默认开启深度思考，输出预算会被思维链吃掉一大半。
-    // 题目识别是确定性的抽取任务，关掉思考更快也更省额度；不认这个字段的厂商会忽略它。
-    enable_thinking: false,
-  };
+  const text = await postChat(
+    settings,
+    {
+      model: settings.model,
+      temperature: 0.1,
+      messages: [{ role: 'user', content }],
+      // Qwen 系列默认开启深度思考，输出预算会被思维链吃掉一大半。
+      // 题目识别是确定性的抽取任务，关掉思考更快也更省额度；不认这个字段的厂商会忽略它。
+      enable_thinking: false,
+    },
+    '识别请求没发出去：可能是浏览器拦截了跨域请求，或网络不通。可以先手动填写',
+  );
 
-  let response: Response;
-  try {
-    response = await fetch(settings.baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    throw new Error('识别请求没发出去：可能是浏览器拦截了跨域请求，或网络不通。可以先手动填写');
-  }
-
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`识别接口返回 ${response.status}：${detail.slice(0, 200)}`);
-  }
-
-  const payload = (await response.json()) as {
-    choices?: { message?: { content?: unknown } }[];
-  };
-  const rawContent = payload.choices?.[0]?.message?.content;
-  const text = typeof rawContent === 'string' ? rawContent : String(rawContent ?? '');
   return toDraft(extractJson(text));
+}
+
+/**
+ * 只拍了题干、没拍答案页时，用纯文本模型把答案和解析解出来。
+ * 这里不关闭思考模式：解题吃的是准确率，不是速度。
+ */
+export async function solveQuestion(
+  input: ISolveInput,
+  settings: IAiSettings,
+): Promise<ISolveResult> {
+  if (!settings.apiKey.trim()) throw new Error('还没有配置 API Key');
+  if (!input.stem.trim()) throw new Error('没有题干文字，解不了，先补题干或拍答案页');
+
+  const model = (settings.solverModel || '').trim() || settings.model;
+
+  const text = await postChat(
+    settings,
+    {
+      model,
+      temperature: 0.2,
+      messages: [{ role: 'user', content: buildSolvePrompt(input) }],
+    },
+    '解题请求没发出去：可能是浏览器拦截了跨域请求，或网络不通',
+  );
+
+  const data = extractJson(text) as Record<string, unknown>;
+  return {
+    answer: asString(data.answer),
+    solution: asString(data.solution),
+  };
 }

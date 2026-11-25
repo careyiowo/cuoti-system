@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, Pencil, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Pencil, Sparkles, Trash2, X } from 'lucide-react';
 import MasteryMark from '@/components/MasteryMark';
 import QuestionEditor from '@/components/QuestionEditor';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,8 @@ import {
 import { chapterById, subjectByKey } from '@/data/taxonomy';
 import { deleteQuestion, getImages, getQuestion, saveQuestion } from '@/lib/db';
 import { draftFromQuestion, questionFromDraft, type IQuestionDraft } from '@/lib/draft';
+import { solveQuestion } from '@/lib/ai';
+import { loadAiSettings } from '@/lib/settings';
 import { masteryOf, typeName } from '@/lib/question';
 import type { IImageRecord, IQuestion } from '@/lib/types';
 
@@ -39,6 +41,7 @@ export default function QuestionPage() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<IQuestionDraft | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [solving, setSolving] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -106,6 +109,41 @@ export default function QuestionPage() {
     navigate('/');
   };
 
+  const resolveWithAi = async () => {
+    if (!question) return;
+    if (!question.stem.trim()) {
+      toast.error('这道题没有题干文字，AI 解不了，先编辑补上题干');
+      return;
+    }
+    setSolving(true);
+    try {
+      const settings = loadAiSettings();
+      const solved = await solveQuestion(
+        {
+          subject: question.subject,
+          type: question.type,
+          stem: question.stem,
+          options: question.options,
+        },
+        settings,
+      );
+      const next: IQuestion = {
+        ...question,
+        answer: solved.answer,
+        solution: solved.solution,
+        solutionSource: 'ai',
+        updatedAt: Date.now(),
+      };
+      await saveQuestion(next);
+      setQuestion(next);
+      toast.success('已用 AI 重解，答案和解析被覆盖，记得核对');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error));
+    } finally {
+      setSolving(false);
+    }
+  };
+
   if (missing) {
     return (
       <div className="space-y-4 py-16 text-center">
@@ -168,7 +206,12 @@ export default function QuestionPage() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Card className="rounded-sm p-4">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">标准答案</div>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">标准答案</div>
+            {question.solutionSource === 'ai' && (
+              <span className="text-[11px] text-muted-foreground">AI 求解 · 未核对</span>
+            )}
+          </div>
           <p className="mt-1.5 whitespace-pre-wrap text-[14px] text-foreground">
             {question.answer || '未录入'}
           </p>
@@ -201,6 +244,14 @@ export default function QuestionPage() {
         <Button variant="outline" onClick={openEdit}>
           <Pencil className="size-4" strokeWidth={1.75} />
           编辑
+        </Button>
+        <Button variant="outline" onClick={resolveWithAi} disabled={solving}>
+          {solving ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Sparkles className="size-4" strokeWidth={1.75} />
+          )}
+          {solving ? '解题中' : '让 AI 重解'}
         </Button>
         <Button variant="ghost" onClick={() => setConfirmDelete(true)}>
           <Trash2 className="size-4" strokeWidth={1.75} />

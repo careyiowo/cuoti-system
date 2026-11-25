@@ -76,6 +76,7 @@ export function questionFromDraft(draft: IQuestionDraft, base?: IQuestion): IQue
     wrong: base?.wrong ?? 0,
     lastResult: base?.lastResult ?? null,
     lastPracticedAt: base?.lastPracticedAt ?? null,
+    solutionSource: base?.solutionSource ?? null,
     createdAt: base?.createdAt ?? now,
     updatedAt: now,
   };

@@ -7,11 +7,15 @@
  * ISession{id,createdAt,finishedAt,questionIds,responses,scopeLabel}
  * QuestionType = 'choice' | 'blank' | 'essay'
  * Mastery = 'new' | 'reviewing' | 'mastered' | 'stuck'
+ * SolutionSource = 'photo' | 'ai' | 'manual'
  */
 
 export type QuestionType = 'choice' | 'blank' | 'essay';
 
 export type Mastery = 'new' | 'reviewing' | 'mastered' | 'stuck';
+
+/** 答案解析的来源：拍到的教辅答案 / 模型解出来的（要核对）/ 手动填的 */
+export type SolutionSource = 'photo' | 'ai' | 'manual';
 
 export interface IOption {
   label: string;
@@ -39,6 +43,8 @@ export interface IQuestion {
   wrong: number;
   lastResult: 'correct' | 'wrong' | null;
   lastPracticedAt: number | null;
+  /** 答案解析的来源，旧数据可能没有这个字段 */
+  solutionSource?: SolutionSource | null;
   createdAt: number;
   updatedAt: number;
 }

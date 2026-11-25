@@ -39,6 +39,7 @@ export default function SettingsPage() {
       baseUrl: settings.baseUrl.trim(),
       apiKey: settings.apiKey.trim(),
       model: settings.model.trim(),
+      solverModel: settings.solverModel.trim(),
     });
     toast.success('已保存识别设置');
   };
@@ -160,12 +161,23 @@ export default function SettingsPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[12px] text-muted-foreground">模型名</Label>
+            <Label className="text-[12px] text-muted-foreground">识别模型（要能看图）</Label>
             <Input
               value={settings.model}
               onChange={(e) => patch({ model: e.target.value })}
               placeholder="qwen3.7-plus"
             />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label className="text-[12px] text-muted-foreground">解题模型（没拍答案时用）</Label>
+            <Input
+              value={settings.solverModel}
+              onChange={(e) => patch({ solverModel: e.target.value })}
+              placeholder="deepseek-v4.1-flash"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              纯文本模型就够，走同一个接口和同一个 Key。不填就回退到上面的识别模型
+            </p>
           </div>
         </div>
 
@@ -198,6 +210,9 @@ export default function SettingsPage() {
             填好后点「测试连接」：返回成功说明地址、Key、模型名三样都通；报 404 多半是模型名写错，去百炼控制台核对可用的模型 ID。
           </li>
           <li>必须选能看图的模型。qwen-mt-lite（翻译）、gui-plus（界面操作）这类认不出题目，即使有免费额度也用不上。</li>
+          <li>
+            解题模型默认 deepseek-v4.1-flash：不拍答案页时，用它把答案和解析解出来。它不需要看图，但同样有 100 万免费 tokens。
+          </li>
           <li>百炼和火山方舟允许浏览器直连；智谱的接口不放行跨域，直连会被拦，要用它得另配后端中转。</li>
           <li>Key 只写在当前浏览器的本地存储里，不会上传到任何地方，但不要在公用电脑上填。</li>
         </ul>
